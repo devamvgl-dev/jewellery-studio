@@ -267,7 +267,9 @@ def generate_image_gemini():
             json={
                 'prompt':          prompt,
                 'negative_prompt': negative_prompt,
-                'image_size':           'square_hd',   # 1024×1024
+                # Sets get a WIDE landscape frame so multiple pieces can sit side-by-side
+                # without FLUX collapsing them into one. Single products stay square.
+                'image_size':           'landscape_16_9' if is_set else 'square_hd',
                 'num_images':           1,
                 'num_inference_steps':  30,             # Pro converges faster than Dev
                 'guidance_scale':       7.5,            # strict prompt-following

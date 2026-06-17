@@ -752,7 +752,9 @@ If the original image contains MORE THAN ONE piece (e.g. a cuff bracelet + a pen
 - Count the pieces in the original. Write that exact count into the imagen_prompt. If the original has a bracelet, a necklace, and a pair of earrings, that is FOUR items (1 bracelet + 1 necklace + 2 earrings) and ALL FOUR must be fully visible in the rendered image.
 - The MODIFICATION (Block 4) must be applied CONSISTENTLY to EVERY piece, so they read as a matching collection. If the centre stone changes to emerald, EVERY piece gets the emerald treatment.
 - Every piece must be described separately (Block 3) AND explicitly placed in the frame (Block 5).
-- For any set, default to a FLAT-LAY overhead composition (Block 7) so all pieces fit in the square frame without crowding.
+- For any set, compose as a WIDE HORIZONTAL LANDSCAPE flat-lay (the image is rendered in a wide 16:9 frame for sets) with the pieces laid out SIDE BY SIDE across the width, evenly spaced, all the same scale relative to real life. This gives every piece its own space so none gets dropped.
+- BALANCE THE WORD COUNT: describe each piece in roughly the SAME number of words. Do NOT lavish detail on the cuff/bracelet and skimp on the necklace and earrings — FLUX renders whatever you describe most, so an over-described cuff makes it ignore the rest. Give the earrings and necklace equal descriptive weight.
+- Open the prompt by stating the full layout (e.g. "Wide horizontal flat-lay showing all four pieces side by side: cuff bracelet on the left, pendant necklace in the centre, two drop earrings on the right") BEFORE describing individual pieces.
 - NEVER drop, omit, merge, or summarise pieces. NEVER render only the bracelet, only the pendant, or only the earrings. Missing even one piece is a FAILED output.
 
 BLOCK 1 — SUBJECT DECLARATION (what FLUX renders first)
@@ -792,7 +794,7 @@ BLOCK 5 — SPATIAL ARRANGEMENT (where objects sit in the frame)
 FLUX needs to know where to place things. Without this, it centres randomly.
 Single product: "Presented lying flat, centred in frame, horizontal orientation, slight 15-degree angle."
 Pendant: "Chain draped in a loose U-shape, pendant hanging at centre-bottom of chain."
-Set: name and place EVERY piece explicitly — e.g. "Flat-lay overhead view. Cuff bracelet at left-centre. Pendant necklace at right, chain forming a loose U-shape with the pendant face-up. Two matching drop earrings at bottom-centre, side by side. All four pieces fully visible, evenly spaced with clear gaps, none overlapping, none cropped." Do NOT stop after one piece.
+Set: WIDE HORIZONTAL flat-lay, pieces arranged left-to-right across the frame. Name and place EVERY piece explicitly — e.g. "Wide horizontal overhead flat-lay. Cuff bracelet on the LEFT third of the frame. Pendant necklace in the CENTRE third, chain forming a loose U-shape with the pendant face-up. Two matching drop earrings on the RIGHT third, side by side. All four pieces shown at the same relative scale, fully visible, evenly spaced across the width with clear gaps, none overlapping, none cropped." Do NOT stop after one piece.
 Ring: "Ring positioned upright, face-on, slight 10-degree tilt toward camera to show setting detail."
 
 BLOCK 6 — LIGHTING + PHOTOGRAPHY STYLE (controls realism and sharpness)
