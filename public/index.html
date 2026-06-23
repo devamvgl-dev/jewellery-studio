@@ -257,6 +257,9 @@ body::before{content:'';display:block;height:3px;background:linear-gradient(90de
 <body>
 <div class="container">
 
+  <button id="logoutBtn" onclick="doLogout()" title="Sign out"
+    style="position:absolute;top:18px;right:20px;font-family:var(--sans);font-size:10px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-light);background:transparent;border:0.5px solid var(--border-strong);border-radius:8px;padding:7px 14px;cursor:pointer;transition:all 0.2s;">Sign out</button>
+
   <header class="header">
     <div class="header-eyebrow">AI · Product Lab</div>
     <h1>Design Innovation Studio</h1>
@@ -411,9 +414,15 @@ let _usageBlocked = false;
 let _usageWait    = 0;
 let _usageTimer   = null;
 
+async function doLogout(){
+  try{ await fetch('/api/logout',{method:'POST'}); }catch(_){}
+  window.location.href='/login';
+}
+
 async function fetchUsageStatus(){
   try {
     const res = await fetch('/api/usage-status');
+    if(res.status===401){ window.location.href='/login'; return null; }
     const d   = await res.json();
     updateUsageUI(d);
     return d;
@@ -885,6 +894,7 @@ ${focus?'Focus modifications on: '+focus:''}`;
   try{
     const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:8000,system,messages:[{role:'user',content:[imageBlock,{type:'text',text:'Scan the image carefully. Count every visible product (a cuff + necklace + pair of earrings = 4 pieces). Classify each one. Then return the JSON with 6 modification ideas. CRITICAL: if this is a multi-piece set, EVERY imagen_prompt must explicitly describe and place ALL pieces with the exact same piece count as the original — the generated image must show the whole set together (bracelet AND necklace AND earrings), never just one piece. Apply each modification consistently across every piece so they look like a matching collection.'}]}]})});
     clearInterval(timer);
+    if(res.status===401){ window.location.href='/login'; return; }
     const contentType=res.headers.get('content-type')||'';
     if(!contentType.includes('application/json')){throw new Error('Server returned an error (HTTP '+res.status+'). The service may be restarting — please wait 30 seconds and try again.');}
     const data=await res.json();

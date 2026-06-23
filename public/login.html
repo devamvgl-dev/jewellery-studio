@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign in · Design Innovation Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#B8952A;--gold-light:#F5E6B8;--gold-mid:#D4AF5A;--gold-dark:#7A6018;
+  --cream:#FAF8F4;--ink:#1A1814;--ink-mid:#4A4640;--ink-light:#8A8680;
+  --border:rgba(184,149,42,0.18);--border-strong:rgba(184,149,42,0.38);
+  --surface:#FFFFFF;--surface-warm:#FDFBF7;
+  --serif:'Cormorant Garamond',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--cream);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-mid),var(--gold),transparent);}
+.login-card{width:100%;max-width:400px;background:var(--surface);border:0.5px solid var(--border-strong);border-radius:18px;padding:2.75rem 2.25rem;box-shadow:0 12px 40px rgba(26,24,20,0.08);animation:fadeUp 0.5s ease both;}
+.login-head{text-align:center;margin-bottom:2rem;}
+.login-eyebrow{font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.login-head h1{font-family:var(--serif);font-size:30px;font-weight:300;color:var(--ink);line-height:1.2;margin-bottom:6px;}
+.login-head p{font-size:12px;color:var(--ink-light);letter-spacing:0.04em;}
+.login-rule{display:flex;align-items:center;gap:12px;margin:1.25rem auto 0;max-width:200px;}
+.login-rule::before,.login-rule::after{content:'';flex:1;height:0.5px;background:var(--gold-mid);opacity:0.5;}
+.login-rule span{font-size:14px;color:var(--gold);opacity:0.7;}
+.field{margin-bottom:1.1rem;}
+.field label{display:block;font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-light);margin-bottom:7px;}
+.field input{width:100%;padding:12px 14px;font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--surface-warm);border:0.5px solid var(--border-strong);border-radius:10px;transition:all 0.2s;}
+.field input:focus{outline:none;border-color:var(--gold);background:#FFFDF5;box-shadow:0 0 0 3px rgba(184,149,42,0.1);}
+.btn-login{width:100%;margin-top:0.5rem;padding:13px;font-family:var(--sans);font-size:12px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,var(--gold),var(--gold-dark));border:none;border-radius:10px;cursor:pointer;transition:all 0.2s;}
+.btn-login:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 18px rgba(184,149,42,0.3);}
+.btn-login:disabled{opacity:0.6;cursor:not-allowed;}
+.err-msg{display:none;margin-top:1rem;padding:10px 14px;font-size:12px;color:#9B2C2C;background:#FDF2F2;border:0.5px solid #F5C6C6;border-radius:8px;text-align:center;}
+.err-msg.show{display:block;animation:fadeUp 0.25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-head">
+      <div class="login-eyebrow">Vaibhav Global · VGL</div>
+      <h1>Design Innovation Studio</h1>
+      <p>Please sign in to continue</p>
+      <div class="login-rule"><span>✦</span></div>
+    </div>
+
+    <form id="loginForm" autocomplete="on">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username" required autofocus />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn-login" id="loginBtn">Sign in</button>
+      <div class="err-msg" id="errMsg"></div>
+    </form>
+  </div>
+
+<script>
+const form=document.getElementById('loginForm');
+const btn=document.getElementById('loginBtn');
+const errMsg=document.getElementById('errMsg');
+
+form.addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  errMsg.classList.remove('show');
+  const username=document.getElementById('username').value.trim();
+  const password=document.getElementById('password').value;
+  if(!username||!password){ showErr('Please enter your username and password.'); return; }
+
+  btn.disabled=true; btn.textContent='Signing in…';
+  try{
+    const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const data=await res.json().catch(()=>({}));
+    if(res.ok && data.ok){
+      window.location.href='/';
+      return;
+    }
+    showErr(data.error||'Invalid username or password.');
+  }catch(_){
+    showErr('Could not reach the server. Please try again.');
+  }
+  btn.disabled=false; btn.textContent='Sign in';
+});
+
+function showErr(msg){ errMsg.textContent=msg; errMsg.classList.add('show'); }
+</script>
+</body>
+</html>

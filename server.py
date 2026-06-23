@@ -1,19 +1,57 @@
 import os
 import time
 import json
+import hmac
 import base64
 import requests
-from flask import Flask, request, jsonify, send_from_directory
+from datetime import timedelta
+from functools import wraps
+from flask import Flask, request, jsonify, send_from_directory, session, redirect
 from dotenv import load_dotenv
 from flask_cors import CORS
 
 load_dotenv()
 
 app = Flask(__name__, static_folder='public')
-CORS(app)
+CORS(app, supports_credentials=True)
+
+# Secret used to sign the session cookie. MUST be set in production (Render).
+app.secret_key = os.getenv('SECRET_KEY', 'dev-only-insecure-secret-change-me')
+app.permanent_session_lifetime = timedelta(hours=12)
 
 ANTHROPIC_KEY = os.getenv('ANTHROPIC_KEY')
 FAL_KEY       = os.getenv('FAL_KEY')
+
+# ── Authentication: a few fixed users ─────────────────────
+# Configure via the APP_USERS env var as comma-separated user:password pairs,
+# e.g.  APP_USERS="amit:secret1,priya:secret2,studio:secret3"
+# Falls back to a single dev login if unset (local development only).
+def _load_users():
+    users = {}
+    for pair in os.getenv('APP_USERS', '').split(','):
+        pair = pair.strip()
+        if ':' in pair:
+            u, p = pair.split(':', 1)
+            if u.strip():
+                users[u.strip()] = p
+    if not users:
+        users = {'admin': 'admin'}   # dev-only fallback
+        print('[AUTH] WARNING: APP_USERS not set — using dev login admin/admin')
+    return users
+
+USERS = _load_users()
+
+def login_required(view):
+    """Gate a route behind a valid session. API routes get 401 JSON;
+    page routes redirect to the login screen."""
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get('user'):
+            if request.path.startswith('/api/'):
+                return jsonify({'error': 'Authentication required', 'auth_required': True}), 401
+            return redirect('/login')
+        return view(*args, **kwargs)
+    return wrapped
 
 # ── Rate-limit config ─────────────────────────────────────
 WINDOW_SECONDS = 3600    # 1-hour rolling window
@@ -68,8 +106,41 @@ def _check_limit():
     return None
 
 
+# ── Auth routes ───────────────────────────────────────────
+@app.route('/login')
+def login_page():
+    if session.get('user'):
+        return redirect('/')
+    return send_from_directory('public', 'login.html')
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    data     = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    expected = USERS.get(username)
+    # Constant-time comparison to avoid timing attacks
+    if expected is not None and hmac.compare_digest(str(expected), str(password)):
+        session.permanent = True
+        session['user']   = username
+        print(f'[AUTH] Login OK: {username}')
+        return jsonify({'ok': True, 'user': username})
+    print(f'[AUTH] Login FAILED for username={username!r}')
+    return jsonify({'ok': False, 'error': 'Invalid username or password'}), 401
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    session.clear()
+    return jsonify({'ok': True})
+
+@app.route('/api/me')
+def api_me():
+    return jsonify({'user': session.get('user')})
+
+
 # ── Usage status endpoint (polled by frontend) ────────────
 @app.route('/api/usage-status')
+@login_required
 def usage_status():
     ip   = _get_ip()
     used, remaining, blocked, resets = _get_usage(ip)
@@ -84,13 +155,20 @@ def usage_status():
     })
 
 
-# ── Serve frontend ─────────────────────────────────────────
+# ── Serve frontend (gated) ─────────────────────────────────
 @app.route('/')
+@login_required
 def index():
     return send_from_directory('public', 'index.html')
 
 @app.route('/<path:path>')
 def static_files(path):
+    # The login page and its assets are always reachable; everything else
+    # (notably index.html) requires a valid session.
+    if path == 'login.html':
+        return send_from_directory('public', path)
+    if not session.get('user'):
+        return redirect('/login')
     return send_from_directory('public', path)
 
 
@@ -102,6 +180,7 @@ def static_files(path):
 # This eliminates read timeouts on long prompts entirely.
 #
 @app.route('/api/analyze', methods=['POST'])
+@login_required
 def analyze():
     blocked = _check_limit()
     if blocked:
@@ -220,6 +299,7 @@ def analyze():
 
 # ── FLUX.1 Dev image generation ───────────────────────────
 @app.route('/api/generate-image-gemini', methods=['POST'])   # endpoint name kept — frontend unchanged
+@login_required
 def generate_image_gemini():
     blocked = _check_limit()
     if blocked:
